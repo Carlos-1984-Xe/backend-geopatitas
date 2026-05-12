@@ -2,25 +2,22 @@ spring:
   application:
     name: GeoPatitas
   datasource:
-    # Supabase Connection details
-    # Replace [YOUR-SUPABASE-HOST], [YOUR-DB-USER], [YOUR-DB-PASSWORD] with actual Supabase values
-    url: jdbc:postgresql://${SUPABASE_HOST:db.YOUR-SUPABASE-HOST.supabase.co}:5432/postgres
-    username: ${SUPABASE_USER:postgres}
-    password: ${SUPABASE_PASSWORD:your-password}
+    # url: jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:5432/postgres
+    url: jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:5432/postgres
+    username: postgres.csxhblxxunewljrllhvd
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update # For dev purposes. In prod, use tools like Flyway or Liquibase
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: true
   
-# Application Specific Configurations
 geopatitas:
   ai:
     huggingface:
-      # Hugging Face API Key for embedding generations
-      api-key: ${HUGGINGFACE_API_KEY:your-huggingface-api-key}
-      model-id: sentence-transformers/all-MiniLM-L6-v2 # Example model for embeddings
+      api-key: ${HUGGINGFACE_API_KEY}
+      model-id: sentence-transformers/all-MiniLM-L6-v2

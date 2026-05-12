@@ -20,10 +20,9 @@ public class SecurityConfig {
             .cors(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Allow public access to GET requests for pets
+                // Allow public access to GET and POST for pets during development
                 .requestMatchers(HttpMethod.GET, "/api/v1/pets/**").permitAll()
-                // Protect pet creation, update, deletion
-                .requestMatchers("/api/v1/pets/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/v1/pets/**").permitAll()
                 // Protect user and matching endpoints by default
                 .requestMatchers("/api/v1/users/**").authenticated()
                 .requestMatchers("/api/v1/matching/**").authenticated()

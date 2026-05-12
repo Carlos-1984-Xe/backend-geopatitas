@@ -1,6 +1,5 @@
 package com.geopatitas.api.pet.entity;
 
-import com.pgvector.PGvector;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,6 +46,7 @@ public class Pet {
 
     // PGVector for embeddings
     // Adjust dimensions (e.g., 384 for all-MiniLM-L6-v2) according to your model
+    @JdbcTypeCode(SqlTypes.VECTOR)
     @Column(columnDefinition = "vector(384)")
-    private PGvector embedding;
+    private float[] embedding;
 }

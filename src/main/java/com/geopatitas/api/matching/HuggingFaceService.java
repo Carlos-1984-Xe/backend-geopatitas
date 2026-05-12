@@ -20,7 +20,7 @@ public class HuggingFaceService {
             @Value("${geopatitas.ai.huggingface.api-key}") String apiKey,
             @Value("${geopatitas.ai.huggingface.model-id}") String modelId) {
 
-        this.modelUrl = "https://api-inference.huggingface.co/pipeline/feature-extraction/" + modelId;
+        this.modelUrl = "https://router.huggingface.co/hf-inference/models/" + modelId + "/pipeline/feature-extraction";
         
         // Configuramos el RestClient (la nueva forma recomendada en Spring Boot 3)
         this.restClient = RestClient.builder()
