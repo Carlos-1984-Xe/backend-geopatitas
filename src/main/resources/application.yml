@@ -21,3 +21,7 @@ geopatitas:
     huggingface:
       api-key: ${HUGGINGFACE_API_KEY}
       model-id: sentence-transformers/all-MiniLM-L6-v2
+  supabase:
+    url: https://csxhblxxunewljrllhvd.supabase.co
+    api-key: ${SUPABASE_API_KEY}
+    bucket: pets

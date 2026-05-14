@@ -2,19 +2,26 @@ package com.geopatitas.api.pet.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
 import java.util.List;
 
-@Data
 public class PetRequestDTO {
+    
+    @NotNull(message = "El ID del usuario es obligatorio")
+    private java.util.UUID userId;
+
+    @NotNull(message = "El tipo de reporte es obligatorio")
+    private com.geopatitas.api.pet.entity.TipoReporte tipoReporte;
+
     @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
+
+    private String especie;
+    private String raza;
 
     @NotBlank(message = "La descripción es vital para el matching por IA")
     private String descripcion;
 
     private String sexo;
-    
     private List<String> fotos;
 
     @NotNull(message = "La latitud es obligatoria")
@@ -22,4 +29,26 @@ public class PetRequestDTO {
 
     @NotNull(message = "La longitud es obligatoria")
     private Double longitud;
+
+    // Getters and Setters
+    public java.util.UUID getUserId() { return userId; }
+    public void setUserId(java.util.UUID userId) { this.userId = userId; }
+    public com.geopatitas.api.pet.entity.TipoReporte getTipoReporte() { return tipoReporte; }
+    public void setTipoReporte(com.geopatitas.api.pet.entity.TipoReporte tipoReporte) { this.tipoReporte = tipoReporte; }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
+    public String getEspecie() { return especie; }
+    public void setEspecie(String especie) { this.especie = especie; }
+    public String getRaza() { return raza; }
+    public void setRaza(String raza) { this.raza = raza; }
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    public String getSexo() { return sexo; }
+    public void setSexo(String sexo) { this.sexo = sexo; }
+    public List<String> getFotos() { return fotos; }
+    public void setFotos(List<String> fotos) { this.fotos = fotos; }
+    public Double getLatitud() { return latitud; }
+    public void setLatitud(Double latitud) { this.latitud = latitud; }
+    public Double getLongitud() { return longitud; }
+    public void setLongitud(Double longitud) { this.longitud = longitud; }
 }
