@@ -26,7 +26,14 @@ public class PetController {
     }
 
     @PostMapping
-    public ResponseEntity<Pet> reportarMascota(@Valid @RequestBody PetRequestDTO requestDTO) {
+    public ResponseEntity<Pet> reportarMascota(@RequestBody PetRequestDTO requestDTO) {
+        Pet petGuardado = petService.reportarMascota(requestDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(petGuardado);
+    }
+
+    @PostMapping("/guest")
+    public ResponseEntity<Pet> reportarMascotaInvitado(@RequestBody PetRequestDTO requestDTO) {
+        // userId debería ser null, se usará contactoEmail para crear el fantasma
         Pet petGuardado = petService.reportarMascota(requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(petGuardado);
     }
@@ -34,6 +41,18 @@ public class PetController {
     @GetMapping
     public ResponseEntity<List<Pet>> listarTodas() {
         return ResponseEntity.ok(petService.listarTodas());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Pet> obtenerPorId(@PathVariable java.util.UUID id) {
+        return ResponseEntity.ok(petService.obtenerPorId(id));
+    }
+
+    @PutMapping("/{id}/estado")
+    public ResponseEntity<Pet> cambiarEstado(@PathVariable java.util.UUID id, @RequestBody Map<String, String> body) {
+        String nuevoEstado = body.get("estado");
+        if (nuevoEstado == null) return ResponseEntity.badRequest().build();
+        return ResponseEntity.ok(petService.cambiarEstado(id, nuevoEstado));
     }
 
     @GetMapping("/match")
@@ -61,9 +80,32 @@ public class PetController {
     public ResponseEntity<List<Pet>> buscarCercanos(
             @RequestParam("lat") Double lat,
             @RequestParam("lng") Double lng,
-            @RequestParam(value = "radius", defaultValue = "5000") Double radius) {
+            @RequestParam(value = "radius", defaultValue = "5000") Double radius,
+            @RequestParam(value = "tipoReporte", required = false) String tipoReporte,
+            @RequestParam(value = "especie", required = false) String especie,
+            @RequestParam(value = "estado", required = false) String estado,
+            @RequestParam(value = "color", required = false) String color,
+            @RequestParam(value = "tamano", required = false) String tamano) {
         
         List<Pet> cercanos = petService.buscarCercanos(lat, lng, radius);
+        
+        // Filtros en memoria
+        if (tipoReporte != null && !tipoReporte.isEmpty()) {
+            cercanos = cercanos.stream().filter(p -> tipoReporte.equalsIgnoreCase(p.getTipoReporte().name())).toList();
+        }
+        if (especie != null && !especie.isEmpty()) {
+            cercanos = cercanos.stream().filter(p -> especie.equalsIgnoreCase(p.getEspecie())).toList();
+        }
+        if (estado != null && !estado.isEmpty()) {
+            cercanos = cercanos.stream().filter(p -> estado.equalsIgnoreCase(p.getEstado())).toList();
+        }
+        if (color != null && !color.isEmpty()) {
+            cercanos = cercanos.stream().filter(p -> color.equalsIgnoreCase(p.getColor())).toList();
+        }
+        if (tamano != null && !tamano.isEmpty()) {
+            cercanos = cercanos.stream().filter(p -> tamano.equalsIgnoreCase(p.getTamano())).toList();
+        }
+
         return ResponseEntity.ok(cercanos);
     }
 }

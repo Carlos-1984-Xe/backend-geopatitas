@@ -9,7 +9,10 @@ import com.geopatitas.api.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class PetService {
@@ -17,18 +20,36 @@ public class PetService {
     private final PetRepository petRepository;
     private final HuggingFaceService huggingFaceService;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public PetService(PetRepository petRepository, HuggingFaceService huggingFaceService, UserRepository userRepository) {
+    public PetService(PetRepository petRepository, HuggingFaceService huggingFaceService, UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.petRepository = petRepository;
         this.huggingFaceService = huggingFaceService;
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
     public Pet reportarMascota(PetRequestDTO dto) {
-        // Buscamos el usuario por el ID (Por ahora simulamos que viene en el DTO, en Fase 2 vendrá del Token JWT)
-        User user = userRepository.findById(dto.getUserId())
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + dto.getUserId()));
+        User user;
+        if (dto.getUserId() != null) {
+            user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + dto.getUserId()));
+        } else {
+            if (dto.getContactoEmail() == null || dto.getContactoEmail().isEmpty()) {
+                throw new RuntimeException("Se requiere un email de contacto para reportar como invitado");
+            }
+            // Lógica de usuario fantasma
+            user = userRepository.findByEmail(dto.getContactoEmail()).orElseGet(() -> {
+                User newUser = new User();
+                newUser.setEmail(dto.getContactoEmail());
+                newUser.setNombre("Invitado");
+                // Contraseña aleatoria imposible de adivinar
+                newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+                newUser.setRol("GUEST");
+                return userRepository.save(newUser);
+            });
+        }
 
         // 1. Llamamos a la IA para convertir la descripción en un vector de características
         float[] vector = huggingFaceService.generateEmbedding(dto.getDescripcion());
@@ -42,6 +63,8 @@ public class PetService {
         pet.setRaza(dto.getRaza());
         pet.setDescripcion(dto.getDescripcion());
         pet.setSexo(dto.getSexo());
+        pet.setTamano(dto.getTamano());
+        pet.setColor(dto.getColor());
         pet.setFotos(dto.getFotos());
         pet.setLatitud(dto.getLatitud());
         pet.setLongitud(dto.getLongitud());
@@ -75,5 +98,17 @@ public class PetService {
     public List<Pet> buscarCercanos(double lat, double lng, double radioMetros) {
         System.out.println("Buscando mascotas a " + radioMetros + " metros de lat: " + lat + ", lng: " + lng);
         return petRepository.findPetsNearby(lat, lng, radioMetros);
+    }
+
+    public Pet obtenerPorId(UUID id) {
+        return petRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Mascota no encontrada"));
+    }
+
+    @Transactional
+    public Pet cambiarEstado(UUID id, String nuevoEstado) {
+        Pet pet = obtenerPorId(id);
+        pet.setEstado(nuevoEstado);
+        return petRepository.save(pet);
     }
 }

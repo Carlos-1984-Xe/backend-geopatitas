@@ -33,7 +33,21 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User requestUser) {
-        if (userRepository.findByEmail(requestUser.getEmail()).isPresent()) {
+        java.util.Optional<User> existingUser = userRepository.findByEmail(requestUser.getEmail());
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+            if ("GUEST".equals(user.getRol())) {
+                // Reclamar cuenta fantasma
+                user.setNombre(requestUser.getNombre());
+                user.setPassword(passwordEncoder.encode(requestUser.getPassword()));
+                user.setRol("USER");
+                userRepository.save(user);
+                
+                String token = jwtUtil.generateToken(user.getEmail());
+                Map<String, String> response = new HashMap<>();
+                response.put("token", token);
+                return ResponseEntity.ok(response);
+            }
             return ResponseEntity.badRequest().body(Map.of("error", "El email ya está registrado"));
         }
 
