@@ -6,13 +6,13 @@ import java.util.List;
 
 public class PetRequestDTO {
     
-    @NotNull(message = "El ID del usuario es obligatorio")
     private java.util.UUID userId;
+    
+    private String contactoEmail;
 
     @NotNull(message = "El tipo de reporte es obligatorio")
     private com.geopatitas.api.pet.entity.TipoReporte tipoReporte;
 
-    @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
 
     private String especie;
@@ -22,17 +22,19 @@ public class PetRequestDTO {
     private String descripcion;
 
     private String sexo;
+    private String tamano;
+    private String color;
     private List<String> fotos;
 
-    @NotNull(message = "La latitud es obligatoria")
     private Double latitud;
 
-    @NotNull(message = "La longitud es obligatoria")
     private Double longitud;
 
     // Getters and Setters
     public java.util.UUID getUserId() { return userId; }
     public void setUserId(java.util.UUID userId) { this.userId = userId; }
+    public String getContactoEmail() { return contactoEmail; }
+    public void setContactoEmail(String contactoEmail) { this.contactoEmail = contactoEmail; }
     public com.geopatitas.api.pet.entity.TipoReporte getTipoReporte() { return tipoReporte; }
     public void setTipoReporte(com.geopatitas.api.pet.entity.TipoReporte tipoReporte) { this.tipoReporte = tipoReporte; }
     public String getNombre() { return nombre; }
@@ -45,6 +47,10 @@ public class PetRequestDTO {
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
     public String getSexo() { return sexo; }
     public void setSexo(String sexo) { this.sexo = sexo; }
+    public String getTamano() { return tamano; }
+    public void setTamano(String tamano) { this.tamano = tamano; }
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
     public List<String> getFotos() { return fotos; }
     public void setFotos(List<String> fotos) { this.fotos = fotos; }
     public Double getLatitud() { return latitud; }

@@ -24,7 +24,7 @@ public class Pet {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false)
+    @Column
     private String nombre;
 
     @Column
@@ -44,6 +44,12 @@ public class Pet {
 
     @Column(length = 20)
     private String sexo;
+
+    @Column
+    private String tamano;
+
+    @Column
+    private String color;
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "fotos", columnDefinition = "text[]")
@@ -81,6 +87,10 @@ public class Pet {
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
     public String getSexo() { return sexo; }
     public void setSexo(String sexo) { this.sexo = sexo; }
+    public String getTamano() { return tamano; }
+    public void setTamano(String tamano) { this.tamano = tamano; }
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
     public List<String> getFotos() { return fotos; }
     public void setFotos(List<String> fotos) { this.fotos = fotos; }
     public Double getLatitud() { return latitud; }
