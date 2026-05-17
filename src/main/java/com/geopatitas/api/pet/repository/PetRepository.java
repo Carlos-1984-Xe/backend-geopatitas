@@ -22,6 +22,13 @@ public interface PetRepository extends JpaRepository<Pet, UUID> {
     @Query(value = "SELECT * FROM pets p ORDER BY p.embedding <=> CAST(:embedding AS vector) LIMIT :limit", nativeQuery = true)
     List<Pet> findNearestPets(@Param("embedding") float[] embedding, @Param("limit") int limit);
 
+    // Búsqueda con umbral para notificaciones cruzadas
+    @Query(value = "SELECT * FROM pets p " +
+                   "WHERE p.tipo_reporte <> :tipoReporte " +
+                   "AND (p.embedding <=> CAST(:embedding AS vector)) <= 0.20 " +
+                   "ORDER BY p.embedding <=> CAST(:embedding AS vector) LIMIT 5", nativeQuery = true)
+    List<Pet> findMatchesWithThreshold(@Param("embedding") float[] embedding, @Param("tipoReporte") String tipoReporte);
+
     // Búsqueda geográfica usando PostGIS
     // Usamos CAST(... AS geography) en lugar de \\:\\:geography para evitar que el linter del IDE marque falsos errores visuales.
     @Query(value = "SELECT * FROM pets p WHERE p.latitud IS NOT NULL AND p.longitud IS NOT NULL AND ST_DWithin(CAST(ST_MakePoint(p.longitud, p.latitud) AS geography), CAST(ST_MakePoint(:lng, :lat) AS geography), :radiusInMeters) ORDER BY ST_Distance(CAST(ST_MakePoint(p.longitud, p.latitud) AS geography), CAST(ST_MakePoint(:lng, :lat) AS geography))", nativeQuery = true)
