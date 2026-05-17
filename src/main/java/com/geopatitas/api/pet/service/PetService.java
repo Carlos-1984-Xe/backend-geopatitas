@@ -6,6 +6,8 @@ import com.geopatitas.api.pet.entity.Pet;
 import com.geopatitas.api.pet.repository.PetRepository;
 import com.geopatitas.api.user.entity.User;
 import com.geopatitas.api.user.repository.UserRepository;
+import com.geopatitas.api.notification.entity.MatchNotification;
+import com.geopatitas.api.notification.repository.MatchNotificationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,12 +23,14 @@ public class PetService {
     private final HuggingFaceService huggingFaceService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MatchNotificationRepository matchNotificationRepository;
 
-    public PetService(PetRepository petRepository, HuggingFaceService huggingFaceService, UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public PetService(PetRepository petRepository, HuggingFaceService huggingFaceService, UserRepository userRepository, PasswordEncoder passwordEncoder, MatchNotificationRepository matchNotificationRepository) {
         this.petRepository = petRepository;
         this.huggingFaceService = huggingFaceService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.matchNotificationRepository = matchNotificationRepository;
     }
 
     @Transactional
@@ -74,7 +78,55 @@ public class PetService {
         pet.setEmbedding(vector); 
         
         // 3. Guardamos en base de datos
-        return petRepository.save(pet);
+        Pet savedPet = petRepository.save(pet);
+        
+        // 4. Buscar coincidencias automáticamente (MATCHMAKING)
+        try {
+            List<Pet> matches = petRepository.findMatchesWithThreshold(vector, dto.getTipoReporte().name());
+            for (Pet match : matches) {
+                // Calcular similitud aproximada
+                double similarity = calculateCosineSimilarity(vector, match.getEmbedding()) * 100.0;
+                
+                // Evitar notificaciones para el mismo usuario
+                if (savedPet.getUser().getId().equals(match.getUser().getId())) {
+                    continue;
+                }
+
+                // Notificar al dueño del nuevo reporte
+                MatchNotification notif1 = new MatchNotification();
+                notif1.setUser(savedPet.getUser());
+                notif1.setPetReportado(savedPet);
+                notif1.setPetCoincidencia(match);
+                notif1.setPorcentajeSimilitud(similarity);
+                matchNotificationRepository.save(notif1);
+
+                // Notificar al dueño del reporte antiguo
+                MatchNotification notif2 = new MatchNotification();
+                notif2.setUser(match.getUser());
+                notif2.setPetReportado(match);
+                notif2.setPetCoincidencia(savedPet);
+                notif2.setPorcentajeSimilitud(similarity);
+                matchNotificationRepository.save(notif2);
+            }
+        } catch (Exception e) {
+            System.err.println("Error generando notificaciones de match: " + e.getMessage());
+            // No detenemos la creación del reporte si falla el matchmaking
+        }
+
+        return savedPet;
+    }
+
+    private double calculateCosineSimilarity(float[] vectorA, float[] vectorB) {
+        double dotProduct = 0.0;
+        double normA = 0.0;
+        double normB = 0.0;
+        for (int i = 0; i < vectorA.length; i++) {
+            dotProduct += vectorA[i] * vectorB[i];
+            normA += Math.pow(vectorA[i], 2);
+            normB += Math.pow(vectorB[i], 2);
+        }
+        if (normA == 0.0 || normB == 0.0) return 0.0;
+        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
     public List<Pet> listarTodas() {
