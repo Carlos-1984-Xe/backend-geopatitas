@@ -4,9 +4,11 @@ import com.geopatitas.api.pet.dto.PetRequestDTO;
 import com.geopatitas.api.pet.entity.Pet;
 import com.geopatitas.api.pet.service.PetService;
 import com.geopatitas.api.pet.service.SupabaseStorageService;
+import com.geopatitas.api.user.repository.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,14 +21,20 @@ public class PetController {
 
     private final PetService petService;
     private final SupabaseStorageService storageService;
+    private final UserRepository userRepository;
 
-    public PetController(PetService petService, SupabaseStorageService storageService) {
+    public PetController(PetService petService, SupabaseStorageService storageService, UserRepository userRepository) {
         this.petService = petService;
         this.storageService = storageService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping
-    public ResponseEntity<Pet> reportarMascota(@RequestBody PetRequestDTO requestDTO) {
+    public ResponseEntity<Pet> reportarMascota(@RequestBody PetRequestDTO requestDTO, Authentication authentication) {
+        if (requestDTO.getUserId() == null && authentication != null) {
+            userRepository.findByEmail(authentication.getName())
+                    .ifPresent(user -> requestDTO.setUserId(user.getId()));
+        }
         Pet petGuardado = petService.reportarMascota(requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(petGuardado);
     }

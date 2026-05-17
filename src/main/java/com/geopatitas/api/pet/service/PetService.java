@@ -65,6 +65,9 @@ public class PetService {
         pet.setSexo(dto.getSexo());
         pet.setTamano(dto.getTamano());
         pet.setColor(dto.getColor());
+        pet.setContactoNombre(dto.getContactoNombre());
+        pet.setContactoEmail(dto.getContactoEmail());
+        pet.setContactoTelefono(dto.getContactoTelefono());
         pet.setFotos(dto.getFotos());
         pet.setLatitud(dto.getLatitud());
         pet.setLongitud(dto.getLongitud());

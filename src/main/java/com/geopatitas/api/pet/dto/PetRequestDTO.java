@@ -7,8 +7,10 @@ import java.util.List;
 public class PetRequestDTO {
     
     private java.util.UUID userId;
-    
+
+    private String contactoNombre;
     private String contactoEmail;
+    private String contactoTelefono;
 
     @NotNull(message = "El tipo de reporte es obligatorio")
     private com.geopatitas.api.pet.entity.TipoReporte tipoReporte;
@@ -33,8 +35,12 @@ public class PetRequestDTO {
     // Getters and Setters
     public java.util.UUID getUserId() { return userId; }
     public void setUserId(java.util.UUID userId) { this.userId = userId; }
+    public String getContactoNombre() { return contactoNombre; }
+    public void setContactoNombre(String contactoNombre) { this.contactoNombre = contactoNombre; }
     public String getContactoEmail() { return contactoEmail; }
     public void setContactoEmail(String contactoEmail) { this.contactoEmail = contactoEmail; }
+    public String getContactoTelefono() { return contactoTelefono; }
+    public void setContactoTelefono(String contactoTelefono) { this.contactoTelefono = contactoTelefono; }
     public com.geopatitas.api.pet.entity.TipoReporte getTipoReporte() { return tipoReporte; }
     public void setTipoReporte(com.geopatitas.api.pet.entity.TipoReporte tipoReporte) { this.tipoReporte = tipoReporte; }
     public String getNombre() { return nombre; }
