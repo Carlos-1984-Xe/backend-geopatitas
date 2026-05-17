@@ -12,15 +12,18 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import com.geopatitas.api.pet.service.PetService;
 
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController {
 
     private final UserRepository userRepository;
+    private final PetService petService;
 
-    public UserController(UserRepository userRepository) {
+    public UserController(UserRepository userRepository, PetService petService) {
         this.userRepository = userRepository;
+        this.petService = petService;
     }
 
     @GetMapping("/me")
@@ -44,5 +47,20 @@ public class UserController {
         }
 
         return ResponseEntity.status(404).body(Map.of("error", "Usuario no encontrado"));
+    }
+
+    @GetMapping("/me/pets")
+    public ResponseEntity<?> getMyPets() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(401).body(Map.of("error", "No autorizado"));
+        }
+
+        String email = authentication.getName();
+        try {
+            return ResponseEntity.ok(petService.obtenerMascotasPorUsuario(email));
+        } catch (Exception e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
     }
 }
