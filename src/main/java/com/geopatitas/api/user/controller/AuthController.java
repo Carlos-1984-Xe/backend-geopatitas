@@ -1,6 +1,7 @@
 package com.geopatitas.api.user.controller;
 
 import com.geopatitas.api.security.JwtUtil;
+import com.geopatitas.api.user.dto.RegisterRequest;
 import com.geopatitas.api.user.entity.User;
 import com.geopatitas.api.user.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
@@ -32,17 +33,16 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User requestUser) {
+    public ResponseEntity<?> register(@RequestBody RegisterRequest requestUser) {
         java.util.Optional<User> existingUser = userRepository.findByEmail(requestUser.getEmail());
         if (existingUser.isPresent()) {
             User user = existingUser.get();
             if ("GUEST".equals(user.getRol())) {
-                // Reclamar cuenta fantasma
                 user.setNombre(requestUser.getNombre());
                 user.setPassword(passwordEncoder.encode(requestUser.getPassword()));
                 user.setRol("USER");
                 userRepository.save(user);
-                
+
                 String token = jwtUtil.generateToken(user.getEmail());
                 Map<String, String> response = new HashMap<>();
                 response.put("token", token);
