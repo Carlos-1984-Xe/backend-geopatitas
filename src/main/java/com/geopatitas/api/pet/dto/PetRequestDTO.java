@@ -3,24 +3,26 @@ package com.geopatitas.api.pet.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
+import java.util.UUID;
+import com.geopatitas.api.pet.entity.TipoReporte;
 
 public class PetRequestDTO {
-    
-    private java.util.UUID userId;
+    private UUID userId;
 
     private String contactoNombre;
     private String contactoEmail;
     private String contactoTelefono;
 
-    @NotNull(message = "El tipo de reporte es obligatorio")
-    private com.geopatitas.api.pet.entity.TipoReporte tipoReporte;
+    @NotNull(message = "El tipo de reporte es obligatorio (PERDIDO/ENCONTRADO)")
+    private TipoReporte tipoReporte;
 
     private String nombre;
 
+    @NotBlank(message = "La especie es obligatoria")
     private String especie;
     private String raza;
 
-    @NotBlank(message = "La descripción es vital para el matching por IA")
+    @NotBlank(message = "La descripción es obligatoria")
     private String descripcion;
 
     private String sexo;

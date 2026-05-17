@@ -30,7 +30,7 @@ public class PetController {
     }
 
     @PostMapping
-    public ResponseEntity<Pet> reportarMascota(@RequestBody PetRequestDTO requestDTO, Authentication authentication) {
+    public ResponseEntity<Pet> reportarMascota(@Valid @RequestBody PetRequestDTO requestDTO, Authentication authentication) {
         if (requestDTO.getUserId() == null && authentication != null) {
             userRepository.findByEmail(authentication.getName())
                     .ifPresent(user -> requestDTO.setUserId(user.getId()));
@@ -40,7 +40,7 @@ public class PetController {
     }
 
     @PostMapping("/guest")
-    public ResponseEntity<Pet> reportarMascotaInvitado(@RequestBody PetRequestDTO requestDTO) {
+    public ResponseEntity<Pet> reportarMascotaInvitado(@Valid @RequestBody PetRequestDTO requestDTO) {
         // userId debería ser null, se usará contactoEmail para crear el fantasma
         Pet petGuardado = petService.reportarMascota(requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(petGuardado);
@@ -49,6 +49,28 @@ public class PetController {
     @GetMapping
     public ResponseEntity<List<Pet>> listarTodas() {
         return ResponseEntity.ok(petService.listarTodas());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> actualizarMascota(@PathVariable java.util.UUID id, @Valid @RequestBody PetRequestDTO requestDTO) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new RuntimeException("No autorizado");
+        }
+        
+        Pet petActualizado = petService.actualizarMascota(id, requestDTO, auth.getName());
+        return ResponseEntity.ok(petActualizado);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminarMascota(@PathVariable java.util.UUID id) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new RuntimeException("No autorizado");
+        }
+        
+        petService.eliminarMascota(id, auth.getName());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}")

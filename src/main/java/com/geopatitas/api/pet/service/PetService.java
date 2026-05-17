@@ -114,4 +114,58 @@ public class PetService {
         pet.setEstado(nuevoEstado);
         return petRepository.save(pet);
     }
+
+    public List<Pet> obtenerMascotasPorUsuario(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con email: " + email));
+        return petRepository.findByUserId(user.getId());
+    }
+
+    @Transactional
+    public Pet actualizarMascota(UUID id, PetRequestDTO dto, String email) {
+        Pet pet = obtenerPorId(id);
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                
+        if (!pet.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("No tienes permiso para editar este reporte");
+        }
+
+        pet.setTipoReporte(dto.getTipoReporte());
+        pet.setNombre(dto.getNombre());
+        pet.setEspecie(dto.getEspecie());
+        pet.setRaza(dto.getRaza());
+        
+        // Si la descripción cambia, regenerar el embedding
+        if (!pet.getDescripcion().equals(dto.getDescripcion())) {
+            pet.setDescripcion(dto.getDescripcion());
+            pet.setEmbedding(huggingFaceService.generateEmbedding(dto.getDescripcion()));
+        }
+        
+        pet.setSexo(dto.getSexo());
+        pet.setTamano(dto.getTamano());
+        pet.setColor(dto.getColor());
+        
+        if (dto.getFotos() != null && !dto.getFotos().isEmpty()) {
+            pet.setFotos(dto.getFotos());
+        }
+        
+        if (dto.getLatitud() != null) pet.setLatitud(dto.getLatitud());
+        if (dto.getLongitud() != null) pet.setLongitud(dto.getLongitud());
+
+        return petRepository.save(pet);
+    }
+
+    @Transactional
+    public void eliminarMascota(UUID id, String email) {
+        Pet pet = obtenerPorId(id);
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                
+        if (!pet.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("No tienes permiso para eliminar este reporte");
+        }
+        
+        petRepository.delete(pet);
+    }
 }

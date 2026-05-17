@@ -35,6 +35,26 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRuntimeExceptions(RuntimeException ex) {
+        Map<String, Object> response = new HashMap<>();
+        String mensaje = ex.getMessage() != null ? ex.getMessage() : "Error interno del servidor";
+        
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        if (mensaje.toLowerCase().contains("no tienes permiso") || mensaje.toLowerCase().contains("no autorizado")) {
+            status = HttpStatus.FORBIDDEN;
+        } else if (mensaje.toLowerCase().contains("no encontrado")) {
+            status = HttpStatus.NOT_FOUND;
+        }
+        
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", status.value());
+        response.put("error", status.getReasonPhrase());
+        response.put("message", mensaje);
+        
+        return ResponseEntity.status(status).body(response);
+    }
+
     /**
      * Captura cualquier otra excepción no controlada (500 Internal Server Error)
      * para no exponer los trazos de la base de datos o stacktraces completos al frontend.

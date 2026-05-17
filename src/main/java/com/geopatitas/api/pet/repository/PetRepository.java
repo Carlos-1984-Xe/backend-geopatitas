@@ -14,6 +14,8 @@ import java.util.UUID;
 public interface PetRepository extends JpaRepository<Pet, UUID> {
 
     List<Pet> findByTipoReporte(TipoReporte tipoReporte);
+    
+    List<Pet> findByUserId(UUID userId);
 
     // Búsqueda por similitud del coseno: el operador <=> devuelve la distancia.
     // A menor distancia, mayor similitud.
