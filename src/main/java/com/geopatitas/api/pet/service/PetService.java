@@ -85,7 +85,7 @@ public class PetService {
             if (dto.getLatitud() != null && dto.getLongitud() != null) {
                 String tipoOpuesto = dto.getTipoReporte().name().equals("PERDIDO") ? "ENCONTRADO" : "PERDIDO";
                 List<Pet> matches = petRepository.findMatchesWithCombinedScore(
-                    vector, tipoOpuesto, dto.getLatitud(), dto.getLongitud(), 
+                    vector, tipoOpuesto, dto.getEspecie(), dto.getLatitud(), dto.getLongitud(), 
                     15.0, 15000.0, 0.30, 5
                 );
                 
@@ -150,14 +150,14 @@ public class PetService {
     }
 
     public List<com.geopatitas.api.pet.dto.PetMatchResponseDTO> buscarCoincidencias(
-            String descripcion, String tipoOpuesto, double lat, double lng, 
+            String descripcion, String tipoOpuesto, String especie, double lat, double lng, 
             double maxRadiusKm, double minScore, int limit) {
         try {
             float[] vectorBusqueda = huggingFaceService.generateEmbedding(descripcion);
             double maxRadiusMeters = maxRadiusKm * 1000.0;
             
             List<Pet> result = petRepository.findMatchesWithCombinedScore(
-                vectorBusqueda, tipoOpuesto, lat, lng, maxRadiusKm, maxRadiusMeters, minScore, limit
+                vectorBusqueda, tipoOpuesto, especie, lat, lng, maxRadiusKm, maxRadiusMeters, minScore, limit
             );
 
             return result.stream().map(pet -> {

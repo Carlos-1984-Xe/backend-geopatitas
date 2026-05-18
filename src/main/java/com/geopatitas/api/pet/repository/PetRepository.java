@@ -26,6 +26,7 @@ public interface PetRepository extends JpaRepository<Pet, UUID> {
     @Query(value = "SELECT p.* FROM pets p " +
                    "WHERE p.tipo_reporte = :tipoOpuesto " +
                    "  AND p.estado = 'ACTIVO' " +
+                   "  AND (CAST(:especie AS text) IS NULL OR p.especie = CAST(:especie AS text)) " +
                    "  AND ST_DWithin(CAST(ST_SetSRID(ST_MakePoint(p.longitud, p.latitud), 4326) AS geography), CAST(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326) AS geography), :maxRadiusMeters) " +
                    "  AND (1 - (p.embedding <=> CAST(:queryEmbedding AS vector))) >= :minScore " +
                    "ORDER BY (" +
@@ -35,6 +36,7 @@ public interface PetRepository extends JpaRepository<Pet, UUID> {
     List<Pet> findMatchesWithCombinedScore(
             @Param("queryEmbedding") float[] queryEmbedding,
             @Param("tipoOpuesto") String tipoOpuesto,
+            @Param("especie") String especie,
             @Param("lat") double lat,
             @Param("lng") double lng,
             @Param("maxRadiusKm") double maxRadiusKm,
