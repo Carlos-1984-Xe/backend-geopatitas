@@ -17,12 +17,11 @@ public interface PetRepository extends JpaRepository<Pet, UUID> {
     
     List<Pet> findByUserId(UUID userId);
 
-    // Búsqueda por similitud del coseno: el operador <=> devuelve la distancia.
-    // A menor distancia, mayor similitud.
+    // Búsqueda vectorial simple (usa operador <=> para calcular distancia coseno)
     @Query(value = "SELECT * FROM pets p ORDER BY p.embedding <=> CAST(:embedding AS vector) LIMIT :limit", nativeQuery = true)
     List<Pet> findNearestPets(@Param("embedding") float[] embedding, @Param("limit") int limit);
 
-    // Búsqueda con umbral semántico y geográfico combinado (PostGIS + pgvector)
+    // Búsqueda principal del Matchmaking (PostGIS + pgvector) con castigos matemáticos
     @Query(value = "SELECT p.* FROM pets p " +
                    "WHERE p.tipo_reporte = :tipoOpuesto " +
                    "  AND p.estado = 'ACTIVO' " +
@@ -50,8 +49,7 @@ public interface PetRepository extends JpaRepository<Pet, UUID> {
             @Param("minScore") double minScore,
             @Param("limit") int limit);
 
-    // Búsqueda geográfica usando PostGIS
-    // Usamos CAST(... AS geography) en lugar de \\:\\:geography para evitar que el linter del IDE marque falsos errores visuales.
+    // Obtiene mascotas en un radio específico usando PostGIS (usamos CAST para evitar errores de linting en Java)
     @Query(value = "SELECT * FROM pets p WHERE p.latitud IS NOT NULL AND p.longitud IS NOT NULL AND ST_DWithin(CAST(ST_MakePoint(p.longitud, p.latitud) AS geography), CAST(ST_MakePoint(:lng, :lat) AS geography), :radiusInMeters) ORDER BY ST_Distance(CAST(ST_MakePoint(p.longitud, p.latitud) AS geography), CAST(ST_MakePoint(:lng, :lat) AS geography))", nativeQuery = true)
     List<Pet> findPetsNearby(@Param("lat") double lat, @Param("lng") double lng, @Param("radiusInMeters") double radiusInMeters);
 }

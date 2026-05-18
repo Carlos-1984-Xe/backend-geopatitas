@@ -33,7 +33,7 @@ public class UserController {
             return ResponseEntity.status(401).body(Map.of("error", "No autorizado"));
         }
 
-        String email = authentication.getName(); // En JwtAuthenticationFilter pusimos el email como username
+        String email = authentication.getName(); // El email se configuró como username en el filtro JWT
         Optional<User> userOptional = userRepository.findByEmail(email);
 
         if (userOptional.isPresent()) {
