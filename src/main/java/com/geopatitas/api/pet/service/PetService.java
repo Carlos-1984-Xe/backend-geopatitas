@@ -43,22 +43,22 @@ public class PetService {
             if (dto.getContactoEmail() == null || dto.getContactoEmail().isEmpty()) {
                 throw new RuntimeException("Se requiere un email de contacto para reportar como invitado");
             }
-            // Lógica de usuario fantasma
+            // Generar usuario temporal (Guest)
             user = userRepository.findByEmail(dto.getContactoEmail()).orElseGet(() -> {
                 User newUser = new User();
                 newUser.setEmail(dto.getContactoEmail());
                 newUser.setNombre("Invitado");
-                // Contraseña aleatoria imposible de adivinar
+                // Contraseña dummy autogenerada
                 newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
                 newUser.setRol("GUEST");
                 return userRepository.save(newUser);
             });
         }
 
-        // 1. Llamamos a la IA para convertir la descripción en un vector de características
+        // Genera el vector de búsqueda (embedding)
         float[] vector = huggingFaceService.generateEmbedding(dto.getDescripcion());
 
-        // 2. Creamos la entidad
+        // Creamos la entidad
         Pet pet = new Pet();
         pet.setTipoReporte(dto.getTipoReporte());
         pet.setUser(user);
@@ -77,10 +77,10 @@ public class PetService {
         pet.setLongitud(dto.getLongitud());
         pet.setEmbedding(vector); 
         
-        // 3. Guardamos en base de datos
+        // Guarda en BD
         Pet savedPet = petRepository.save(pet);
         
-        // 4. Buscar coincidencias automáticamente (MATCHMAKING)
+        // Busca coincidencias en background (Matchmaking pasivo)
         try {
             if (dto.getLatitud() != null && dto.getLongitud() != null) {
                 String tipoOpuesto = dto.getTipoReporte().name().equals("PERDIDO") ? "ENCONTRADO" : "PERDIDO";
@@ -90,7 +90,6 @@ public class PetService {
                 );
                 
                 for (Pet match : matches) {
-                    // Ignorar si no tiene coordenadas
                     if (match.getLatitud() == null || match.getLongitud() == null) continue;
 
                     double distKm = distanceInKm(dto.getLatitud(), dto.getLongitud(), match.getLatitud(), match.getLongitud());
@@ -103,15 +102,14 @@ public class PetService {
 
                     double finalPercentage = combinedScore * 100.0;
                     
-                    // Solo notificar si la coincidencia combinada es alta
                     if (finalPercentage < 60.0) continue;
 
-                    // Evitar notificaciones para el mismo usuario
+                    // No notificarse a sí mismo
                     if (savedPet.getUser().getId().equals(match.getUser().getId())) {
                         continue;
                     }
 
-                    // Notificar al dueño del nuevo reporte
+                    // Notifica al autor del nuevo reporte
                     MatchNotification notif1 = new MatchNotification();
                     notif1.setUser(savedPet.getUser());
                     notif1.setPetReportado(savedPet);
@@ -120,7 +118,7 @@ public class PetService {
                     notif1.setDistanciaKm(distKm);
                     matchNotificationRepository.save(notif1);
 
-                    // Notificar al dueño del reporte antiguo
+                    // Notifica al autor del reporte antiguo
                     MatchNotification notif2 = new MatchNotification();
                     notif2.setUser(match.getUser());
                     notif2.setPetReportado(match);
@@ -236,7 +234,7 @@ public class PetService {
         pet.setEspecie(dto.getEspecie());
         pet.setRaza(dto.getRaza());
         
-        // Si la descripción cambia, regenerar el embedding
+        // Si cambió la descripción, recalcula el vector de IA
         if (!pet.getDescripcion().equals(dto.getDescripcion())) {
             pet.setDescripcion(dto.getDescripcion());
             pet.setEmbedding(huggingFaceService.generateEmbedding(dto.getDescripcion()));

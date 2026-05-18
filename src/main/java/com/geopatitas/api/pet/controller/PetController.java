@@ -41,7 +41,7 @@ public class PetController {
 
     @PostMapping("/guest")
     public ResponseEntity<Pet> reportarMascotaInvitado(@Valid @RequestBody PetRequestDTO requestDTO) {
-        // userId debería ser null, se usará contactoEmail para crear el fantasma
+        // Si userId es null, usa contactoEmail para crear usuario fantasma
         Pet petGuardado = petService.reportarMascota(requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(petGuardado);
     }

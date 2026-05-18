@@ -22,23 +22,19 @@ public class HuggingFaceService {
 
         this.modelUrl = "https://router.huggingface.co/hf-inference/models/" + modelId + "/pipeline/feature-extraction";
         
-        // Configuramos el RestClient (la nueva forma recomendada en Spring Boot 3)
+        // Cliente HTTP con token de HuggingFace
         this.restClient = RestClient.builder()
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }
 
-    /**
-     * Envía un texto a la API de Hugging Face y recibe el vector de embeddings.
-     */
+    // Convierte texto a embedding (vector numérico)
     public float[] generateEmbedding(String text) {
-        // El payload esperado por HuggingFace para feature-extraction
         Map<String, String> body = Map.of("inputs", text);
 
         try {
-            // La API de HuggingFace para sentence-transformers suele devolver un List<Float>
-            // para una sola entrada, o un List<List<Float>> si hay múltiples.
+            // Retorna un array de floats con el vector
             List<Float> response = restClient.post()
                     .uri(modelUrl)
                     .body(body)
@@ -49,7 +45,6 @@ public class HuggingFaceService {
                 throw new RuntimeException("Respuesta vacía desde Hugging Face");
             }
 
-            // Convertimos la Lista de Float a un array primitivo de float[]
             float[] vector = new float[response.size()];
             for (int i = 0; i < response.size(); i++) {
                 vector[i] = response.get(i);
@@ -58,8 +53,7 @@ public class HuggingFaceService {
             return vector;
 
         } catch (Exception e) {
-            // En un sistema real lanzaríamos una CustomException (ej. AiServiceException)
-            throw new RuntimeException("Error al generar el embedding con la IA: " + e.getMessage(), e);
+            throw new RuntimeException("Error llamando a Hugging Face: " + e.getMessage(), e);
         }
     }
 }
