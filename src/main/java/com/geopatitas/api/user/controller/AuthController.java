@@ -40,6 +40,7 @@ public class AuthController {
             if ("GUEST".equals(user.getRol())) {
                 user.setNombre(requestUser.getNombre());
                 user.setPassword(passwordEncoder.encode(requestUser.getPassword()));
+                user.setTelefono(requestUser.getTelefono());
                 user.setRol("USER");
                 userRepository.save(user);
 
@@ -55,6 +56,7 @@ public class AuthController {
         newUser.setNombre(requestUser.getNombre());
         newUser.setEmail(requestUser.getEmail());
         newUser.setPassword(passwordEncoder.encode(requestUser.getPassword()));
+        newUser.setTelefono(requestUser.getTelefono());
         newUser.setRol("USER");
 
         userRepository.save(newUser);

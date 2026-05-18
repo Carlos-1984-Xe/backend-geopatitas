@@ -24,6 +24,9 @@ public class User {
     @Column(nullable = false)
     private String rol;
 
+    @Column
+    private String telefono;
+
     public User() {}
 
     public User(UUID id, String nombre, String email, String password, String rol) {
@@ -44,4 +47,6 @@ public class User {
     public void setPassword(String password) { this.password = password; }
     public String getRol() { return rol; }
     public void setRol(String rol) { this.rol = rol; }
+    public String getTelefono() { return telefono; }
+    public void setTelefono(String telefono) { this.telefono = telefono; }
 }
