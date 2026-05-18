@@ -86,13 +86,22 @@ public class PetController {
     }
 
     @GetMapping("/match")
-    public ResponseEntity<List<Pet>> buscarCoincidencias(@RequestParam("q") String query) {
-        if (query == null || query.trim().isEmpty()) {
+    public ResponseEntity<List<com.geopatitas.api.pet.dto.PetMatchResponseDTO>> obtenerCoincidencias(
+            @RequestParam("q") String descripcion,
+            @RequestParam("tipoOpuesto") String tipoOpuesto,
+            @RequestParam("lat") double lat,
+            @RequestParam("lng") double lng,
+            @RequestParam(value = "maxRadius", defaultValue = "15.0") double maxRadiusKm,
+            @RequestParam(value = "minScore", defaultValue = "0.30") double minScore,
+            @RequestParam(value = "limit", defaultValue = "10") int limit) {
+        try {
+            List<com.geopatitas.api.pet.dto.PetMatchResponseDTO> matches = petService.buscarCoincidencias(
+                descripcion, tipoOpuesto, lat, lng, maxRadiusKm, minScore, limit
+            );
+            return ResponseEntity.ok(matches);
+        } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
-        
-        List<Pet> coincidencias = petService.buscarCoincidencias(query);
-        return ResponseEntity.ok(coincidencias);
     }
 
     @PostMapping("/upload-image")

@@ -82,35 +82,51 @@ public class PetService {
         
         // 4. Buscar coincidencias automáticamente (MATCHMAKING)
         try {
-            List<Pet> matches = petRepository.findMatchesWithThreshold(vector, dto.getTipoReporte().name());
-            for (Pet match : matches) {
-                // Calcular similitud aproximada
-                double similarity = calculateCosineSimilarity(vector, match.getEmbedding()) * 100.0;
+            if (dto.getLatitud() != null && dto.getLongitud() != null) {
+                String tipoOpuesto = dto.getTipoReporte().name().equals("PERDIDO") ? "ENCONTRADO" : "PERDIDO";
+                List<Pet> matches = petRepository.findMatchesWithCombinedScore(
+                    vector, tipoOpuesto, dto.getLatitud(), dto.getLongitud(), 
+                    15.0, 15000.0, 0.30, 5
+                );
                 
-                // Evitar notificaciones para el mismo usuario
-                if (savedPet.getUser().getId().equals(match.getUser().getId())) {
-                    continue;
+                for (Pet match : matches) {
+                    // Ignorar si no tiene coordenadas
+                    if (match.getLatitud() == null || match.getLongitud() == null) continue;
+
+                    double distKm = distanceInKm(dto.getLatitud(), dto.getLongitud(), match.getLatitud(), match.getLongitud());
+                    double sim = calculateCosineSimilarity(vector, match.getEmbedding());
+                    double combinedScore = (0.6 * sim + 0.4 * Math.max(0, 1.0 - distKm / 15.0)) * 100.0;
+                    
+                    // Solo notificar si la coincidencia combinada es alta
+                    if (combinedScore < 60.0) continue;
+
+                    // Evitar notificaciones para el mismo usuario
+                    if (savedPet.getUser().getId().equals(match.getUser().getId())) {
+                        continue;
+                    }
+
+                    // Notificar al dueño del nuevo reporte
+                    MatchNotification notif1 = new MatchNotification();
+                    notif1.setUser(savedPet.getUser());
+                    notif1.setPetReportado(savedPet);
+                    notif1.setPetCoincidencia(match);
+                    notif1.setPorcentajeSimilitud(combinedScore);
+                    notif1.setDistanciaKm(distKm);
+                    matchNotificationRepository.save(notif1);
+
+                    // Notificar al dueño del reporte antiguo
+                    MatchNotification notif2 = new MatchNotification();
+                    notif2.setUser(match.getUser());
+                    notif2.setPetReportado(match);
+                    notif2.setPetCoincidencia(savedPet);
+                    notif2.setPorcentajeSimilitud(combinedScore);
+                    notif2.setDistanciaKm(distKm);
+                    matchNotificationRepository.save(notif2);
                 }
-
-                // Notificar al dueño del nuevo reporte
-                MatchNotification notif1 = new MatchNotification();
-                notif1.setUser(savedPet.getUser());
-                notif1.setPetReportado(savedPet);
-                notif1.setPetCoincidencia(match);
-                notif1.setPorcentajeSimilitud(similarity);
-                matchNotificationRepository.save(notif1);
-
-                // Notificar al dueño del reporte antiguo
-                MatchNotification notif2 = new MatchNotification();
-                notif2.setUser(match.getUser());
-                notif2.setPetReportado(match);
-                notif2.setPetCoincidencia(savedPet);
-                notif2.setPorcentajeSimilitud(similarity);
-                matchNotificationRepository.save(notif2);
             }
         } catch (Exception e) {
             System.err.println("Error generando notificaciones de match: " + e.getMessage());
-            // No detenemos la creación del reporte si falla el matchmaking
+            e.printStackTrace();
         }
 
         return savedPet;
@@ -133,21 +149,42 @@ public class PetService {
         return petRepository.findAll();
     }
 
-    public List<Pet> buscarCoincidencias(String descripcion) {
+    public List<com.geopatitas.api.pet.dto.PetMatchResponseDTO> buscarCoincidencias(
+            String descripcion, String tipoOpuesto, double lat, double lng, 
+            double maxRadiusKm, double minScore, int limit) {
         try {
-            System.out.println("Buscando coincidencias para: " + descripcion);
-            // 1. Convertir la descripción de búsqueda a un embedding
             float[] vectorBusqueda = huggingFaceService.generateEmbedding(descripcion);
+            double maxRadiusMeters = maxRadiusKm * 1000.0;
+            
+            List<Pet> result = petRepository.findMatchesWithCombinedScore(
+                vectorBusqueda, tipoOpuesto, lat, lng, maxRadiusKm, maxRadiusMeters, minScore, limit
+            );
 
-            System.out.println("Vector generado correctamente. Consultando base de datos...");
-            // 2. Buscar en la base de datos usando similitud del coseno (Límite 5)
-            List<Pet> result = petRepository.findNearestPets(vectorBusqueda, 5);
-            System.out.println("Búsqueda finalizada. Resultados encontrados: " + result.size());
-            return result;
+            return result.stream().map(pet -> {
+                double distKm = distanceInKm(lat, lng, pet.getLatitud(), pet.getLongitud());
+                double sim = calculateCosineSimilarity(vectorBusqueda, pet.getEmbedding());
+                double combinedScore = (0.6 * sim + 0.4 * Math.max(0, 1.0 - distKm / maxRadiusKm)) * 100.0;
+                return new com.geopatitas.api.pet.dto.PetMatchResponseDTO(pet, combinedScore, distKm);
+            }).toList();
         } catch (Exception e) {
             System.err.println("ERROR CRÍTICO EN BUSCAR COINCIDENCIAS: " + e.getMessage());
             throw e;
         }
+    }
+
+    private double distanceInKm(double lat1, double lon1, double lat2, double lon2) {
+        int R = 6371; // Radius of the earth in km
+        double dLat = deg2rad(lat2 - lat1);
+        double dLon = deg2rad(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                   Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+                   Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c; 
+    }
+
+    private double deg2rad(double deg) {
+        return deg * (Math.PI / 180);
     }
 
     public List<Pet> buscarCercanos(double lat, double lng, double radioMetros) {
@@ -197,6 +234,10 @@ public class PetService {
         pet.setSexo(dto.getSexo());
         pet.setTamano(dto.getTamano());
         pet.setColor(dto.getColor());
+        
+        if (dto.getEstado() != null) {
+            pet.setEstado(dto.getEstado());
+        }
         
         if (dto.getFotos() != null && !dto.getFotos().isEmpty()) {
             pet.setFotos(dto.getFotos());

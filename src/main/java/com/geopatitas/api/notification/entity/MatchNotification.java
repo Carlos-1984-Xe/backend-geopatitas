@@ -29,6 +29,9 @@ public class MatchNotification {
     @Column(nullable = false)
     private Double porcentajeSimilitud;
 
+    @Column
+    private Double distanciaKm;
+
     @Column(nullable = false)
     private Boolean leida = false;
 
@@ -78,6 +81,14 @@ public class MatchNotification {
 
     public void setPorcentajeSimilitud(Double porcentajeSimilitud) {
         this.porcentajeSimilitud = porcentajeSimilitud;
+    }
+
+    public Double getDistanciaKm() {
+        return distanciaKm;
+    }
+
+    public void setDistanciaKm(Double distanciaKm) {
+        this.distanciaKm = distanciaKm;
     }
 
     public Boolean getLeida() {
