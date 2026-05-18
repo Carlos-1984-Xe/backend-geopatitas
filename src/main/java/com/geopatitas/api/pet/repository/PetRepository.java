@@ -22,12 +22,25 @@ public interface PetRepository extends JpaRepository<Pet, UUID> {
     @Query(value = "SELECT * FROM pets p ORDER BY p.embedding <=> CAST(:embedding AS vector) LIMIT :limit", nativeQuery = true)
     List<Pet> findNearestPets(@Param("embedding") float[] embedding, @Param("limit") int limit);
 
-    // Búsqueda con umbral para notificaciones cruzadas
-    @Query(value = "SELECT * FROM pets p " +
-                   "WHERE p.tipo_reporte <> :tipoReporte " +
-                   "AND (p.embedding <=> CAST(:embedding AS vector)) <= 0.20 " +
-                   "ORDER BY p.embedding <=> CAST(:embedding AS vector) LIMIT 5", nativeQuery = true)
-    List<Pet> findMatchesWithThreshold(@Param("embedding") float[] embedding, @Param("tipoReporte") String tipoReporte);
+    // Búsqueda con umbral semántico y geográfico combinado (PostGIS + pgvector)
+    @Query(value = "SELECT p.* FROM pets p " +
+                   "WHERE p.tipo_reporte = :tipoOpuesto " +
+                   "  AND p.estado = 'ACTIVO' " +
+                   "  AND ST_DWithin(CAST(ST_SetSRID(ST_MakePoint(p.longitud, p.latitud), 4326) AS geography), CAST(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326) AS geography), :maxRadiusMeters) " +
+                   "  AND (1 - (p.embedding <=> CAST(:queryEmbedding AS vector))) >= :minScore " +
+                   "ORDER BY (" +
+                   "  0.6 * (1 - (p.embedding <=> CAST(:queryEmbedding AS vector))) + " +
+                   "  0.4 * GREATEST(0, 1.0 - (ST_Distance(CAST(ST_SetSRID(ST_MakePoint(p.longitud, p.latitud), 4326) AS geography), CAST(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326) AS geography)) / 1000.0) / :maxRadiusKm) " +
+                   ") DESC LIMIT :limit", nativeQuery = true)
+    List<Pet> findMatchesWithCombinedScore(
+            @Param("queryEmbedding") float[] queryEmbedding,
+            @Param("tipoOpuesto") String tipoOpuesto,
+            @Param("lat") double lat,
+            @Param("lng") double lng,
+            @Param("maxRadiusKm") double maxRadiusKm,
+            @Param("maxRadiusMeters") double maxRadiusMeters,
+            @Param("minScore") double minScore,
+            @Param("limit") int limit);
 
     // Búsqueda geográfica usando PostGIS
     // Usamos CAST(... AS geography) en lugar de \\:\\:geography para evitar que el linter del IDE marque falsos errores visuales.

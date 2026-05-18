@@ -17,6 +17,8 @@ public class PetRequestDTO {
     private TipoReporte tipoReporte;
 
     private String nombre;
+    
+    private String estado;
 
     @NotBlank(message = "La especie es obligatoria")
     private String especie;
@@ -47,6 +49,8 @@ public class PetRequestDTO {
     public void setTipoReporte(com.geopatitas.api.pet.entity.TipoReporte tipoReporte) { this.tipoReporte = tipoReporte; }
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
+    public String getEstado() { return estado; }
+    public void setEstado(String estado) { this.estado = estado; }
     public String getEspecie() { return especie; }
     public void setEspecie(String especie) { this.especie = especie; }
     public String getRaza() { return raza; }
