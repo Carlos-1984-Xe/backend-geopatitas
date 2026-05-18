@@ -1,6 +1,7 @@
 package com.geopatitas.api.notification.controller;
 
 import com.geopatitas.api.notification.entity.MatchNotification;
+import com.geopatitas.api.notification.dto.NotificationDTO;
 import com.geopatitas.api.notification.service.NotificationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +37,7 @@ public class NotificationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<MatchNotification>> getMyNotifications() {
+    public ResponseEntity<List<NotificationDTO>> getMyNotifications() {
         User user = getAuthenticatedUser();
         return ResponseEntity.ok(notificationService.getMyNotifications(user.getId()));
     }
