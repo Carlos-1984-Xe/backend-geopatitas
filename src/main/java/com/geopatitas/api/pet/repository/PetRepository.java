@@ -30,13 +30,19 @@ public interface PetRepository extends JpaRepository<Pet, UUID> {
                    "  AND ST_DWithin(CAST(ST_SetSRID(ST_MakePoint(p.longitud, p.latitud), 4326) AS geography), CAST(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326) AS geography), :maxRadiusMeters) " +
                    "  AND (1 - (p.embedding <=> CAST(:queryEmbedding AS vector))) >= :minScore " +
                    "ORDER BY (" +
-                   "  0.6 * (1 - (p.embedding <=> CAST(:queryEmbedding AS vector))) + " +
-                   "  0.4 * GREATEST(0, 1.0 - (ST_Distance(CAST(ST_SetSRID(ST_MakePoint(p.longitud, p.latitud), 4326) AS geography), CAST(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326) AS geography)) / 1000.0) / :maxRadiusKm) " +
+                   "  0.75 * (1 - (p.embedding <=> CAST(:queryEmbedding AS vector))) + " +
+                   "  0.25 * GREATEST(0, 1.0 - (ST_Distance(CAST(ST_SetSRID(ST_MakePoint(p.longitud, p.latitud), 4326) AS geography), CAST(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326) AS geography)) / 1000.0) / :maxRadiusKm) " +
+                   "  - (CASE WHEN CAST(:color AS text) IS NOT NULL AND p.color IS NOT NULL AND LOWER(p.color) <> LOWER(CAST(:color AS text)) THEN 0.15 ELSE 0 END) " +
+                   "  - (CASE WHEN CAST(:sexo AS text) IS NOT NULL AND p.sexo IS NOT NULL AND LOWER(p.sexo) <> LOWER(CAST(:sexo AS text)) THEN 0.15 ELSE 0 END) " +
+                   "  - (CASE WHEN CAST(:tamano AS text) IS NOT NULL AND p.tamano IS NOT NULL AND LOWER(p.tamano) <> LOWER(CAST(:tamano AS text)) THEN 0.15 ELSE 0 END) " +
                    ") DESC LIMIT :limit", nativeQuery = true)
     List<Pet> findMatchesWithCombinedScore(
             @Param("queryEmbedding") float[] queryEmbedding,
             @Param("tipoOpuesto") String tipoOpuesto,
             @Param("especie") String especie,
+            @Param("color") String color,
+            @Param("sexo") String sexo,
+            @Param("tamano") String tamano,
             @Param("lat") double lat,
             @Param("lng") double lng,
             @Param("maxRadiusKm") double maxRadiusKm,

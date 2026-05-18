@@ -85,8 +85,8 @@ public class PetService {
             if (dto.getLatitud() != null && dto.getLongitud() != null) {
                 String tipoOpuesto = dto.getTipoReporte().name().equals("PERDIDO") ? "ENCONTRADO" : "PERDIDO";
                 List<Pet> matches = petRepository.findMatchesWithCombinedScore(
-                    vector, tipoOpuesto, dto.getEspecie(), dto.getLatitud(), dto.getLongitud(), 
-                    15.0, 15000.0, 0.30, 5
+                    vector, tipoOpuesto, dto.getEspecie(), dto.getColor(), dto.getSexo(), dto.getTamano(), 
+                    dto.getLatitud(), dto.getLongitud(), 15.0, 15000.0, 0.30, 5
                 );
                 
                 for (Pet match : matches) {
@@ -95,10 +95,16 @@ public class PetService {
 
                     double distKm = distanceInKm(dto.getLatitud(), dto.getLongitud(), match.getLatitud(), match.getLongitud());
                     double sim = calculateCosineSimilarity(vector, match.getEmbedding());
-                    double combinedScore = (0.6 * sim + 0.4 * Math.max(0, 1.0 - distKm / 15.0)) * 100.0;
+                    double combinedScore = (0.75 * sim + 0.25 * Math.max(0, 1.0 - distKm / 15.0));
+
+                    if (dto.getColor() != null && match.getColor() != null && !dto.getColor().equalsIgnoreCase(match.getColor())) combinedScore -= 0.15;
+                    if (dto.getSexo() != null && match.getSexo() != null && !dto.getSexo().equalsIgnoreCase(match.getSexo())) combinedScore -= 0.15;
+                    if (dto.getTamano() != null && match.getTamano() != null && !dto.getTamano().equalsIgnoreCase(match.getTamano())) combinedScore -= 0.15;
+
+                    double finalPercentage = combinedScore * 100.0;
                     
                     // Solo notificar si la coincidencia combinada es alta
-                    if (combinedScore < 60.0) continue;
+                    if (finalPercentage < 60.0) continue;
 
                     // Evitar notificaciones para el mismo usuario
                     if (savedPet.getUser().getId().equals(match.getUser().getId())) {
@@ -110,7 +116,7 @@ public class PetService {
                     notif1.setUser(savedPet.getUser());
                     notif1.setPetReportado(savedPet);
                     notif1.setPetCoincidencia(match);
-                    notif1.setPorcentajeSimilitud(combinedScore);
+                    notif1.setPorcentajeSimilitud(finalPercentage);
                     notif1.setDistanciaKm(distKm);
                     matchNotificationRepository.save(notif1);
 
@@ -119,7 +125,7 @@ public class PetService {
                     notif2.setUser(match.getUser());
                     notif2.setPetReportado(match);
                     notif2.setPetCoincidencia(savedPet);
-                    notif2.setPorcentajeSimilitud(combinedScore);
+                    notif2.setPorcentajeSimilitud(finalPercentage);
                     notif2.setDistanciaKm(distKm);
                     matchNotificationRepository.save(notif2);
                 }
@@ -150,21 +156,26 @@ public class PetService {
     }
 
     public List<com.geopatitas.api.pet.dto.PetMatchResponseDTO> buscarCoincidencias(
-            String descripcion, String tipoOpuesto, String especie, double lat, double lng, 
-            double maxRadiusKm, double minScore, int limit) {
+            String descripcion, String tipoOpuesto, String especie, String color, String sexo, String tamano, 
+            double lat, double lng, double maxRadiusKm, double minScore, int limit) {
         try {
             float[] vectorBusqueda = huggingFaceService.generateEmbedding(descripcion);
             double maxRadiusMeters = maxRadiusKm * 1000.0;
             
             List<Pet> result = petRepository.findMatchesWithCombinedScore(
-                vectorBusqueda, tipoOpuesto, especie, lat, lng, maxRadiusKm, maxRadiusMeters, minScore, limit
+                vectorBusqueda, tipoOpuesto, especie, color, sexo, tamano, lat, lng, maxRadiusKm, maxRadiusMeters, minScore, limit
             );
 
             return result.stream().map(pet -> {
                 double distKm = distanceInKm(lat, lng, pet.getLatitud(), pet.getLongitud());
                 double sim = calculateCosineSimilarity(vectorBusqueda, pet.getEmbedding());
-                double combinedScore = (0.6 * sim + 0.4 * Math.max(0, 1.0 - distKm / maxRadiusKm)) * 100.0;
-                return new com.geopatitas.api.pet.dto.PetMatchResponseDTO(pet, combinedScore, distKm);
+                double combinedScore = (0.75 * sim + 0.25 * Math.max(0, 1.0 - distKm / maxRadiusKm));
+
+                if (color != null && pet.getColor() != null && !color.equalsIgnoreCase(pet.getColor())) combinedScore -= 0.15;
+                if (sexo != null && pet.getSexo() != null && !sexo.equalsIgnoreCase(pet.getSexo())) combinedScore -= 0.15;
+                if (tamano != null && pet.getTamano() != null && !tamano.equalsIgnoreCase(pet.getTamano())) combinedScore -= 0.15;
+
+                return new com.geopatitas.api.pet.dto.PetMatchResponseDTO(pet, combinedScore * 100.0, distKm);
             }).toList();
         } catch (Exception e) {
             System.err.println("ERROR CRÍTICO EN BUSCAR COINCIDENCIAS: " + e.getMessage());

@@ -90,6 +90,9 @@ public class PetController {
             @RequestParam("q") String descripcion,
             @RequestParam("tipoOpuesto") String tipoOpuesto,
             @RequestParam(value = "especie", required = false) String especie,
+            @RequestParam(value = "color", required = false) String color,
+            @RequestParam(value = "sexo", required = false) String sexo,
+            @RequestParam(value = "tamano", required = false) String tamano,
             @RequestParam("lat") double lat,
             @RequestParam("lng") double lng,
             @RequestParam(value = "maxRadius", defaultValue = "15.0") double maxRadiusKm,
@@ -97,7 +100,7 @@ public class PetController {
             @RequestParam(value = "limit", defaultValue = "10") int limit) {
         try {
             List<com.geopatitas.api.pet.dto.PetMatchResponseDTO> matches = petService.buscarCoincidencias(
-                descripcion, tipoOpuesto, especie, lat, lng, maxRadiusKm, minScore, limit
+                descripcion, tipoOpuesto, especie, color, sexo, tamano, lat, lng, maxRadiusKm, minScore, limit
             );
             return ResponseEntity.ok(matches);
         } catch (Exception e) {
